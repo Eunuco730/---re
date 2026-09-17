@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>百分比转分母挑战</title>
+    <style>
+        :root { --page-bg: #f5fdf5; --btn-bg: #7ee081; --text-color: #333; --wrong: #e74c3c; --exit-color: #ff7675; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, sans-serif; }
+        body { background-color: var(--page-bg); margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
+        .container { background: #fff; width: 100%; max-width: 440px; border-radius: 20px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: center; margin-top: 10px; position: relative; }
+        .hidden { display: none; }
+        .btn-exit { position: absolute; top: 15px; left: 15px; border: 1px solid var(--exit-color); color: var(--exit-color); background: none; padding: 5px 10px; border-radius: 8px; font-size: 0.7rem; }
+        .menu-grid { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        button { width: 100%; background: var(--btn-bg); color: #fff; border: none; padding: 15px; font-size: 1.1rem; border-radius: 12px; font-weight: bold; }
+        .grade-box { font-size: 0.8rem; color: #666; margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 10px; }
+        .question { font-size: 2.5rem; font-weight: bold; margin: 20px 0; }
+        input { width: 100%; font-size: 2rem; padding: 15px; border: 3px solid #eee; border-radius: 12px; text-align: center; margin-bottom: 10px; }
+        #answer-display { color: var(--wrong); font-weight: bold; height: 30px; margin-bottom: 10px; visibility: hidden; }
+        .history-title { padding: 15px; color: #8e6fad; cursor: pointer; border-bottom: 1px solid #eee; font-weight: bold; }
+        #history-list { display: none; max-height: 200px; overflow-y: auto; text-align: left; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+        th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
+        .row-wrong { color: var(--wrong); }
+    </style>
+</head>
+<body>
+
+<div id="setup-screen" class="container">
+    <h2>百化分固定</h2>
+    <div id="total-accuracy-box" class="hidden" style="background:#e8f5e9; padding:10px; border-radius:10px; font-weight:bold;">
+        历史总正确率: <span id="total-acc">0%</span>
+    </div>
+    <div class="menu-grid">
+        <button onclick="startQuiz(10)">10 题挑战</button>
+        <button onclick="startQuiz(15)">15 题挑战</button>
+        <button onclick="startQuiz(30)">30 题挑战</button>
+        <button onclick="startQuiz(47)">全部 47 题</button>
+    </div>
+    <div id="history-section" class="hidden">
+        <div class="history-title" onclick="document.getElementById('history-list').style.display=this.nextElementSibling.style.display==='block'?'none':'block'">🕒 最近练习记录 (点击展开)</div>
+        <div id="history-list"></div>
+        <button style="background:white; color:red; border:1px solid red; margin-top:10px;" onclick="clearHistory()">清空历史数据</button>
+    </div>
+</div>
+
+<div id="game-screen" class="container hidden">
+    <button class="btn-exit" onclick="location.reload()">退出</button>
+    <div id="timer" style="margin-top:30px; font-weight:bold;">00:00</div>
+    <div class="grade-box" id="grade-standards"></div>
+    <div class="question"><span id="q-val">--</span>% = 1 / ?</div>
+    <div id="answer-display">答案: <span id="hint-val"></span></div>
+    <input type="number" id="answer-input" placeholder="输入分母" inputmode="decimal">
+    <div style="display:flex; gap:10px;">
+        <button style="background:#ddd; color:#333;" onclick="document.getElementById('answer-display').style.visibility='visible'">看答案</button>
+        <button onclick="nextStep()">确定</button>
+    </div>
+</div>
+
+<div id="result-screen" class="container hidden">
+    <h2>练习完成</h2>
+    <p>得分：<span id="res-score"></span></p>
+    <p>总用时：<span id="res-time"></span></p>
+    <button onclick="location.reload()">返回首页</button>
+    <table id="res-table"><thead><tr><th>题目</th><th>答案</th><th>用时</th></tr></thead><tbody id="res-body"></tbody></table>
+</div>
+
+<script>
+    const data = [{p:1, a:'100'},{p:2, a:'50'},{p:3, a:'33.3'},{p:4, a:'25'},{p:5, a:'20'},{p:5.3, a:'19'},{p:5.6, a:'18'},{p:5.9, a:'17'},{p:6, a:'16.6'},{p:6.3, a:'16'},{p:6.7, a:'15'},{p:7, a:'14.3'},{p:7.1, a:'14'},{p:7.7, a:'13'},{p:8, a:'12.5'},{p:8.3, a:'12'},{p:9, a:'11.1'},{p:9.1, a:'11'},{p:10, a:'10'},{p:11, a:'9.1'},{p:11.1, a:'9'},{p:12, a:'8.3'},{p:12.5, a:'8'},{p:13, a:'7.7'},{p:14, a:'7.1'},{p:14.3, a:'7'},{p:15, a:'6.7'},{p:16, a:'6.3'},{p:16.7, a:'6'},{p:17, a:'5.9'},{p:18, a:'5.6'},{p:19, a:'5.3'},{p:20, a:'5'},{p:21, a:'4.8'},{p:22, a:'4.6'},{p:23, a:'4.4'},{p:24, a:'4.2'},{p:25, a:'4'},{p:26, a:'3.9'},{p:27, a:'3.7'},{p:28, a:'3.6'},{p:29, a:'3.5'},{p:30, a:'3.3'},{p:31, a:'3.2'},{p:32, a:'3.1'},{p:33, a:'3'},{p:33.3, a:'3'}];
+    const rules = {10:{e:10,g:13,p:17}, 15:{e:16,g:20,p:26}, 30:{e:32,g:43,p:55}, 47:{e:32,g:43,p:55}};
+    let quiz = [], cur = 0, score = 0, startT, qStartT, timerT, records = [];
+
+    function startQuiz(num) {
+        quiz = [...data].sort(() => Math.random() - 0.5).slice(0, num);
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        const r = rules[num];
+        document.getElementById('grade-standards').innerHTML = `优秀:${r.e}s 良好:${r.g}s 合格:${r.p}s`;
+        startT = Date.now();
+        qStartT = Date.now();
+        timerT = setInterval(() => {
+            let s = Math.floor((Date.now()-startT)/1000);
+            document.getElementById('timer').innerText = Math.floor(s/60)+":"+String(s%60).padStart(2,'0');
+        }, 1000);
+        render();
+    }
+    function render() {
+        if(cur >= quiz.length) return finish();
+        document.getElementById('answer-display').style.visibility = 'hidden';
+        document.getElementById('q-val').innerText = quiz[cur].p;
+        document.getElementById('hint-val').innerText = quiz[cur].a;
+        document.getElementById('answer-input').value = '';
+        document.getElementById('answer-input').focus();
+        qStartT = Date.now();
+    }
+    function nextStep() {
+        let val = document.getElementById('answer-input').value.trim();
+        let isOk = (val === quiz[cur].a);
+        let timePerQ = ((Date.now() - qStartT)/1000).toFixed(1);
+        if(isOk) score++;
+        records.push({q: quiz[cur].p+'%', a: quiz[cur].a, s: isOk, t: timePerQ});
+        cur++;
+        render();
+    }
+    function finish() {
+        clearInterval(timerT);
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('res-score').innerText = `${score}/${quiz.length}`;
+        document.getElementById('res-time').innerText = document.getElementById('timer').innerText;
+        document.getElementById('res-body').innerHTML = records.map(r => `<tr class="${r.s?'':'row-wrong'}"><td>${r.q}</td><td>${r.a}</td><td>${r.t}s</td></tr>`).join('');
+        saveHistory();
+    }
+    function saveHistory() {
+        let h = JSON.parse(localStorage.getItem('pct_hist') || '[]');
+        h.push({date: new Date().toLocaleDateString(), s: score, t: quiz.length});
+        localStorage.setItem('pct_hist', JSON.stringify(h));
+    }
+    function clearHistory() { localStorage.removeItem('pct_hist'); location.reload(); }
+    window.onload = () => {
+        let h = JSON.parse(localStorage.getItem('pct_hist') || '[]');
+        if(h.length) {
+            document.getElementById('history-section').classList.remove('hidden');
+            document.getElementById('total-accuracy-box').classList.remove('hidden');
+            let s = h.reduce((a,b)=>a+b.s,0), t = h.reduce((a,b)=>a+b.t,0);
+            document.getElementById('total-acc').innerText = Math.round(s/t*100) + '%';
+            document.getElementById('history-list').innerHTML = h.map(i=>`<div style="padding:5px;">${i.date}: ${i.s}/${i.t}</div>`).join('');
+        }
+    };
+    document.onkeyup = (e) => { if(e.key === 'Enter') nextStep(); };
+</script>
+</body>
+</html>
