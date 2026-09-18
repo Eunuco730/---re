@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>百分比转分母挑战</title>
+    <title>百化分固定</title>
     <style>
         :root { --page-bg: #f5fdf5; --btn-bg: #7ee081; --text-color: #333; --wrong: #e74c3c; --exit-color: #ff7675; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, sans-serif; }
@@ -62,7 +62,7 @@
     <p>得分：<span id="res-score"></span></p>
     <p>总用时：<span id="res-time"></span></p>
     <button onclick="location.reload()">返回首页</button>
-    <table id="res-table"><thead><tr><th>题目</th><th>答案</th><th>用时</th></tr></thead><tbody id="res-body"></tbody></table>
+    <table id="res-table"><thead><tr><th>题目</th><th>你的答案</th><th>正确答案</th><th>用时</th></tr></thead><tbody id="res-body"></tbody></table>
 </div>
 
 <script>
@@ -98,7 +98,7 @@
         let isOk = (val === quiz[cur].a);
         let timePerQ = ((Date.now() - qStartT)/1000).toFixed(1);
         if(isOk) score++;
-        records.push({q: quiz[cur].p+'%', a: quiz[cur].a, s: isOk, t: timePerQ});
+        records.push({q: quiz[cur].p+'%', u: val, a: quiz[cur].a, s: isOk, t: timePerQ});
         cur++;
         render();
     }
@@ -108,7 +108,7 @@
         document.getElementById('result-screen').classList.remove('hidden');
         document.getElementById('res-score').innerText = `${score}/${quiz.length}`;
         document.getElementById('res-time').innerText = document.getElementById('timer').innerText;
-        document.getElementById('res-body').innerHTML = records.map(r => `<tr class="${r.s?'':'row-wrong'}"><td>${r.q}</td><td>${r.a}</td><td>${r.t}s</td></tr>`).join('');
+        document.getElementById('res-body').innerHTML = records.map(r => `<tr class="${r.s?'':'row-wrong'}"><td>${r.q}</td><td>${r.u}</td><td>${r.a}</td><td>${r.t}s</td></tr>`).join('');
         saveHistory();
     }
     function saveHistory() {
